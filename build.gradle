@@ -1,0 +1,74 @@
+buildscript {
+	ext {
+		springBootVersion = '2.0.2.RELEASE'
+	}
+	repositories {
+		jcenter()
+		mavenCentral()
+	}
+	dependencies {
+		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+	}
+}
+
+plugins {
+  id 'com.google.cloud.tools.jib' version '0.9.10'
+}
+
+apply plugin: 'java'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+
+group = 'io.durbs'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = 1.8
+
+repositories {
+	jcenter()
+	mavenCentral()
+	maven { url "https://repo.spring.io/milestone" }
+}
+
+ext {
+	springCloudVersion = 'Finchley.RC2'
+}
+
+dependencies {
+
+	compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.7'
+	compile group: 'com.google.guava', name: 'guava', version: '25.1-jre'
+	compile('com.amazonaws:aws-java-sdk-rekognition:1.11.269')
+	compile('com.amazonaws:aws-java-sdk-s3:1.11.269')
+	compile('com.github.ben-manes.caffeine:caffeine:2.6.2')
+	compile('org.springframework.boot:spring-boot-starter-actuator')
+	compile('org.springframework.boot:spring-boot-starter-data-jpa')
+	compile('org.springframework.boot:spring-boot-starter-web')
+	compile('org.apache.kafka:kafka-streams:1.0.1')
+	compile('org.springframework.cloud:spring-cloud-stream')
+	compile('org.springframework.cloud:spring-cloud-stream-binder-kafka')
+	compile('org.springframework.cloud:spring-cloud-stream-binder-kafka-streams')
+	compile('org.springframework.kafka:spring-kafka')
+	runtime('org.postgresql:postgresql')
+	compileOnly('org.projectlombok:lombok')
+	testCompile('org.springframework.boot:spring-boot-starter-test')
+	testCompile('org.springframework.cloud:spring-cloud-stream-test-support')
+}
+
+dependencyManagement {
+	imports {
+		mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+	}
+}
+
+jib {
+  to {
+    image = 'joshdurbin/spring-kafka-rekognition-processor'
+
+    if (System.getenv('CI')) {
+      auth {
+        username = System.getenv('DOCKER_USERNAME')
+        password = System.getenv('DOCKER_PASSWORD')
+      }
+    }
+  }
+}

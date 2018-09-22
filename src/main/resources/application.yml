@@ -1,0 +1,84 @@
+server:
+  port: 8080
+spring:
+  datasource:
+    url: jdbc:postgresql://k8s-postgresql-svc:5432/traffic?currentSchema=rekognition
+    username: trafficproc
+    password: eRqdO92KBwP7
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQL9Dialect
+    show-sql: false
+    properties:
+      hibernate:
+        ddl-auto: validate
+        jdbc:
+          time_zone: UTC
+
+  application:
+    name: streaming-face-processor
+
+  cloud:
+    stream:
+      kafka:
+        binder:
+          brokers: k8s-kafka-svc:9092
+          zkNodes: k8s-zookeeper-svc:2181
+
+      bindings:
+        indexFaceInput:
+          destination: traffic-face-requests
+          group: streaming-face-processor-group
+          binder: kafka
+          consumer:
+            concurrency: 1
+            headerMode: raw
+
+        indexAsyncDeadLetterQueue:
+          destination: traffic-face-requests-dlq
+          binder: kafka
+          producer:
+            headerMode: raw
+
+        searchFaceInput:
+          destination: traffic-search-face-requests
+          group: streaming-face-processor-group
+          binder: kafka
+          consumer:
+            concurrency: 1
+            headerMode: raw
+
+        searchFaceOutput:
+          destination: traffic-search-face-responses
+          binder: kafka
+          producer:
+            headerMode: raw
+
+        searchAsyncDeadLetterQueue:
+          destination: traffic-search-face-requests-dlq
+          binder: kafka
+          producer:
+            headerMode: raw
+
+aws:
+  async: true
+  rekognition:
+    collectionId: traffic-collection-face-processor
+    searchMaxFaces: 50
+    confidenceThreshold: 97.5
+  auth:
+    accessKey: asdf
+    secretKey: asdf
+  pool:
+    workers: 10
+    maxWorkers: 25
+    threadPoolKeepLiveTime: 1000
+    queueSize: 50
+
+logging.level:
+  org.apache.kafka.clients.consumer.ConsumerConfig: ERROR
+  org.apache.kafka.common.utils.AppInfoParser: ERROR
+  org.springframework.cloud.config.client: ERROR
+  ROOT: INFO
+
+endpoints:
+  sensitive: false
